@@ -1,12 +1,15 @@
 var Output = [];
 var InputtedCommand = [];
 var HistoryLine = 0;
-const CommandList = {
+var Color = { r: 0, g: 128, b: 1 };
+var UserLanguage = "zh_CN";
+var WindowTitle = Language[UserLanguage].WindowTitle;
+var CommandList = {
     OUTPUT: {
         Args: ["Content"],
         Execute: function (Args) { OutString(Args.Content); }
     },
-    CALC: {
+    "CALC+": {
         Args: ["Na", "Nb"],
         Execute: function (Args) { OutString(Args.Na + Args.Nb); }
     },
@@ -15,26 +18,44 @@ const CommandList = {
         Execute: function (Args) { window.open(Args.URL, "_blank"); }
     },
     COLOR: {
-        Args: ["Color"],
+        Args: ["r", "g", "b"],
+        Execute: function (Args) { Color = Args; Update(); }
+    },
+    CLEAR: {
+        Args: [],
+        Execute: function (_Args) { Output = []; Update(); }
+    },
+    TITLE: {
+        Args: ["Title"],
+        Execute: function (Args) { if (Args.Title === "") { WindowTitle = Language[UserLanguage].WindowTitle; Update() ;return; }; WindowTitle = Args.Title; Update(); }
+    },
+    LANGUAGE: {
+        Args: ["TL"],
         Execute: function (Args) {
-            document.querySelector("#Box").style.borderColor = `rgb(${Args.Color})`;
-            document.querySelector("#Box").style.boxShadow = `0px 0px 20px rgba(${Args.Color},0.7)`;
-            document.querySelector("#Outputter").style.color = `rgb(${Args.Color})`;
-            document.querySelector("#InputCommand").style.color = `rgb(${Args.Color})`;
-            document.querySelector("#TipSpan").style.color = `rgb(${Args.Color})`;
+            if (!Object.keys(Language).includes(Args.TL)) {
+                OutString(Language[UserLanguage].ChangeFailed);
+                return;
+            };
+            UserLanguage = Args.TL;
+            OutString(`${Language[UserLanguage].ChangedSuccessfully1}${LanguageName[Args.TL]}${Language[UserLanguage].ChangedSuccessfully2}`);
         }
     }
 };
 const Outputter = document.getElementById("Outputter");
 const Inputter = document.getElementById("InputCommand");
-const TipSpan = document.getElementById("TipSpan");
-const OutString = function (Text, NewLine = true) {
+const OutString = function (Text = "", NewLine = true) {
     if (NewLine) { Output.push(Text.toString()); }
     else { Output[Output.length - 1] += Text.toString(); };
     Update();
 };
 const Update = function () {
     Outputter.innerHTML = GetInnerHTML();
+    document.querySelector("#TitleBox").innerText = WindowTitle;
+    document.querySelector("#TitleBox").style.borderColor = `rgb(${Color.r},${Color.g},${Color.b})`;
+    document.querySelector("#TipSpan").style.color = `rgb(${Color.r},${Color.g},${Color.b})`;
+    document.querySelector("#Box").style.borderColor = `rgb(${Color.r},${Color.g},${Color.b})`;
+    Outputter.style.color = `rgb(${Color.r},${Color.g},${Color.b})`;
+    Inputter.style.color = `rgb(${Color.r},${Color.g},${Color.b})`;
 };
 const GetInnerHTML = function () {
     let Result = "";
@@ -54,10 +75,10 @@ const RunCommand = function (Command) {
     if (Parser[0].replace(" ", "") === "") { return; };
     if (Object.keys(CommandList).includes(Parser[0])) {
         if (CommandList[Parser[0]].Args.length > Parser.length - 1) {
-            ThrowError("解释命令", "执行指令所需的参数不足。");
+            ThrowError(Language[UserLanguage].InterpretCommand, Language[UserLanguage].InsParameters);
         }
         else if (CommandList[Parser[0]].Args.length < Parser.length - 1) {
-            ThrowError("解释命令", "给出了太多参数。");
+            ThrowError(Language[UserLanguage].InterpretCommand, Language[UserLanguage].TooManyParameters);
         }
         else {
             let Arg = {};
@@ -71,10 +92,10 @@ const RunCommand = function (Command) {
         };
     }
     else {
-        ThrowError("解释命令", `"${Parser[0]}"不是一个有效的指令。`);
+        ThrowError(Language[UserLanguage].InterpretCommand, `${Language[UserLanguage].InvalidCommand1}${Parser[0]}${Language[UserLanguage].InvalidCommand2}`);
     };
 };
-const ThrowError = function (Name, Text) { OutString(`${Name}时发生错误：${Text}`); };
+const ThrowError = function (Name, Text) { OutString(`${Name}${Language[UserLanguage].FindError}${Text}`); };
 document.addEventListener(
     "keydown",
     function (e) {
